@@ -24,7 +24,7 @@ UI.powerPerSecond = document.getElementById('power-per-second');
 
 UI.increasePowerButton.addEventListener('click', function () {
   Player.earn(Player.clickPower);
-  UI.increasePowerVisual.className = 'pulse';
+  UI.increasePowerVisual.classList.add('pulse');
   Game.powerButtonClicked = Game.time;
 });
 
@@ -116,7 +116,7 @@ Game.frame = function (T) {
   window.requestAnimationFrame(Game.frame);
 
   if (Game.powerButtonClicked && (T - Game.powerButtonClicked > 1000)) {
-    UI.increasePowerVisual.className = '';
+    UI.increasePowerVisual.classList.remove('pulse');
   }
 };
 

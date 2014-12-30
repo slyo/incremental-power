@@ -1,5 +1,5 @@
 html {
-    font-size: 2vmax;
+    font-size: 3vh;
 }
 
 html, body {
@@ -81,14 +81,6 @@ html, body {
     border-bottom-right-radius: 35%;
 }
 
-#container #increase-power:after {
-    content: ".";
-    visibility: hidden;
-    display: block;
-    height: 0;
-    clear: both;
-}
-
 #container #increase-power:hover {
     box-shadow: 0 0 50px #d64b4b !important;
     background: #e84d4d;
@@ -96,17 +88,20 @@ html, body {
 }
 
 #increase-power-visual {
-    float: left;
-    width: 60%;
+    font-size: 3.5rem;
+    color: #fff;
+    padding: 1rem 0 1rem 1rem;
+    display: inline-block;
     margin: 0;
+    vertical-align: middle;
 }
 
 #increase-power-stat {
-    width: 35%;
-    float: left;
+    display: inline-block;
+    vertical-align: middle;
     font-size: 1rem;
+    margin: 0;
     color: #fff;
-    margin-top: 1rem;
 }
 
 @keyframes pulse {
