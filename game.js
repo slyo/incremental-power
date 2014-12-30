@@ -96,8 +96,12 @@ Game.time = 0;
 Game.powerButtonClicked = null;
 
 Game.start = function () {
-  Player.workers.push(new GameWorker('faggots', 10, 5, 0.3));
-  Player.workers.push(new GameWorker('homes', 100, 50, 5));
+  Player.workers.push(new GameWorker('test1', 10, 5, 0.3));
+  Player.workers.push(new GameWorker('test2', 100, 50, 5));
+  Player.workers.push(new GameWorker('test3', 1000, 500, 25));
+  Player.workers.push(new GameWorker('test4', 5000, 1500, 50));
+  Player.workers.push(new GameWorker('test5', 10000, 4000, 100));
+  Player.workers.push(new GameWorker('test6', 100000, 8000, 150));
 
   for (var i = 0; i < Player.workers.length; i++) {
     UI.centerColumn.appendChild(Player.workers[i].draw());
