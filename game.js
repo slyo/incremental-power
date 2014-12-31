@@ -9,6 +9,7 @@ Player.workers = [];
 Player.earn = function (amount) {
   Player.power += amount;
   Player.powerEarned += amount;
+  Player.progress.earned += amount;
 };
 
 Player.spend = function (amount) {
@@ -20,6 +21,7 @@ UI.increasePowerVisual = document.getElementById('increase-power-visual');
 UI.centerColumn = document.getElementById('column-center');
 UI.currentPower = document.getElementById('current-power');
 UI.powerPerSecond = document.getElementById('power-per-second');
+UI.progression = document.getElementById('progression');
 
 
 UI.increasePowerButton.addEventListener('click', function () {
@@ -29,10 +31,11 @@ UI.increasePowerButton.addEventListener('click', function () {
 });
 
 
-var GameWorker = function (name, baseCost, costIncrease, powerPerSecond) {
+var GameWorker = function (name, baseCost, costIncrease, powerPerSecond, icon) {
   this.name = name;
   this.baseCost = baseCost;
   this.cost = baseCost;
+  this.icon = icon;
   this.costIncrease = costIncrease;
   this.powerPerSecond = powerPerSecond;
 
@@ -51,6 +54,8 @@ var GameWorker = function (name, baseCost, costIncrease, powerPerSecond) {
     icon.className = 'worker-icon';
     var i = document.createElement('i');
     i.id = this.name;
+    i.className = this.icon;
+    i.setAttribute('data-icon', '');
     icon.appendChild(i);
     worker.appendChild(icon);
 
@@ -92,20 +97,79 @@ var GameWorker = function (name, baseCost, costIncrease, powerPerSecond) {
   };
 };
 
+var Progression = function (name, step, req) {
+  this.prev = null;
+  this.next = null;
+
+  this.name = name;
+  this.step = step;
+  this.req = req;
+
+  this.earned = 0;
+  this.currentStep = 0;
+
+  this.spanCurrent = document.createElement('span');
+  this.spanCurrent.id = 'progress-' + name + '-current';
+  this.spanCurrent.textContent = '0';
+
+  this.setNext = function (progression) {
+    this.next = progression;
+    progression.prev = this;
+  };
+
+  this.checkProgress = function () {
+    if (this.earned > (this.currentStep + 1) * this.step) {
+      this.currentStep++;
+      if (this.next && this.currentStep == this.req) {
+        this.update();
+        Player.progress = this.next;
+        Player.progress.draw();
+      }
+      return true;
+    }
+    return false;
+  };
+
+  this.progress = function () {
+    var progress = (this.earned / this.step);
+    return Math.min(this.req, progress).toFixed();
+  };
+
+  this.draw = function () {
+    var li = document.createElement('li');
+    li.appendChild(document.createTextNode(this.name + ': '));
+    li.appendChild(this.spanCurrent);
+    li.appendChild(document.createTextNode(' / ' + this.req));
+    UI.progression.appendChild(li);
+  };
+
+  this.update = function () {
+    this.spanCurrent.textContent = this.progress();
+  }
+};
+
+
 Game.time = 0;
 Game.powerButtonClicked = null;
 
 Game.start = function () {
-  Player.workers.push(new GameWorker('test1', 10, 5, 0.3));
-  Player.workers.push(new GameWorker('test2', 100, 50, 5));
-  Player.workers.push(new GameWorker('test3', 1000, 500, 25));
-  Player.workers.push(new GameWorker('test4', 5000, 1500, 50));
-  Player.workers.push(new GameWorker('test5', 10000, 4000, 100));
-  Player.workers.push(new GameWorker('test6', 100000, 8000, 150));
+  Player.workers.push(new GameWorker('test1', 10, 5, 0.3, 'rpg-Icon4_59'));
+  Player.workers.push(new GameWorker('test2', 100, 50, 5, 'rpg-Icon4_89'));
+  Player.workers.push(new GameWorker('test3', 1000, 500, 25, 'rpg-Icon4_89'));
+  Player.workers.push(new GameWorker('test4', 5000, 1500, 50, 'rpg-Icon4_89'));
+  Player.workers.push(new GameWorker('test5', 10000, 4000, 100, 'rpg-Icon4_89'));
+  Player.workers.push(new GameWorker('test6', 100000, 8000, 150, 'rpg-Icon4_89'));
+
+
+  var first = new Progression('test', 100, 10);
+  first.setNext(new Progression('test2', 1000, 5));
+  Player.progress = first;
+
 
   for (var i = 0; i < Player.workers.length; i++) {
     UI.centerColumn.appendChild(Player.workers[i].draw());
   }
+  Player.progress.draw();
 
   window.requestAnimationFrame(Game.frame);
 };
@@ -115,9 +179,13 @@ Game.frame = function (T) {
   Game.time = T;
   Player.earn(Player.powerPerSecond / 1000 * DT);
   UI.currentPower.textContent = Player.power.toFixed();
-  document.title = Player.power.toFixed();
+  //document.title = Player.power.toFixed();
   UI.powerPerSecond.textContent = Player.powerPerSecond.toFixed(1);
   window.requestAnimationFrame(Game.frame);
+
+  if (Player.progress.checkProgress()) {
+    Player.progress.update();
+  }
 
   if (Game.powerButtonClicked && (T - Game.powerButtonClicked > 1000)) {
     UI.increasePowerVisual.classList.remove('pulse');
