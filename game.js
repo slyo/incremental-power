@@ -5,11 +5,15 @@ Player.clickPower = 1;
 Player.power = 0;
 Player.powerEarned = 0;
 Player.workers = [];
+Player.powerProgression = null;
+Player.progress = null;
 
 Player.earn = function (amount) {
   Player.power += amount;
   Player.powerEarned += amount;
-  Player.progress.earned += amount;
+  if (Player.powerProgression) {
+    Player.powerProgression.earned += amount;
+  }
 };
 
 Player.spend = function (amount) {
@@ -28,6 +32,9 @@ UI.increasePowerButton.addEventListener('click', function () {
   Player.earn(Player.clickPower);
   UI.increasePowerVisual.classList.add('pulse');
   Game.powerButtonClicked = Game.time;
+  if (Player.progress) {
+    Player.progress.add(Player.clickPower);
+  }
 });
 
 
@@ -65,7 +72,7 @@ var GameWorker = function (name, baseCost, costIncrease, powerPerSecond, icon) {
     cost.className = 'worker-cost';
     var phCost = document.createElement('span');
     phCost.id = this.name + '-cost';
-    phCost.textContent = this.baseCost.toFixed();
+    phCost.textContent = this.baseCost;
     cost.appendChild(phCost);
     cost.appendChild(document.createTextNode('P'));
     data.appendChild(cost);
@@ -91,13 +98,53 @@ var GameWorker = function (name, baseCost, costIncrease, powerPerSecond, icon) {
       this.owned++;
       Player.powerPerSecond += this.powerPerSecond;
       this.cost += this.costIncrease;
-      cost.textContent = this.cost.toFixed();
-      amount.textContent = this.owned.toFixed();
+      cost.textContent = this.cost;
+      amount.textContent = this.owned.toString();
     }
   };
 };
 
-var Progression = function (name, step, req) {
+var StoryProgression = function (name, req) {
+  this.prev = null;
+  this.next = null;
+
+  this.name = name;
+  this.req = req;
+
+  this.spanCurrent = document.createElement('span');
+  this.spanCurrent.id = 'click-progress-' + name + '-current';
+  this.spanCurrent.textContent = '0';
+
+  this.currentStep = 0;
+
+  this.setNext = function (progression) {
+    this.next = progression;
+    progression.prev = this;
+  };
+
+  this.add = function (amount) {
+    this.currentStep += amount;
+    if (this.currentStep >= this.req) {
+      this.currentStep = this.req;
+      if (this.next && this.currentStep == this.req) {
+        Player.progress = this.next;
+        Player.progress.draw();
+      }
+    }
+    this.spanCurrent.textContent = this.currentStep;
+  };
+
+  this.draw = function () {
+    var li = document.createElement('li');
+    li.appendChild(document.createTextNode(this.name + ': '));
+    li.appendChild(this.spanCurrent);
+    li.appendChild(document.createTextNode(' / ' + this.req));
+    UI.progression.appendChild(li);
+  };
+
+};
+
+var PowerProgression = function (name, step, req) {
   this.prev = null;
   this.next = null;
 
@@ -109,7 +156,7 @@ var Progression = function (name, step, req) {
   this.currentStep = 0;
 
   this.spanCurrent = document.createElement('span');
-  this.spanCurrent.id = 'progress-' + name + '-current';
+  this.spanCurrent.id = 'power-progress-' + name + '-current';
   this.spanCurrent.textContent = '0';
 
   this.setNext = function (progression) {
@@ -122,8 +169,8 @@ var Progression = function (name, step, req) {
       this.currentStep++;
       if (this.next && this.currentStep == this.req) {
         this.update();
-        Player.progress = this.next;
-        Player.progress.draw();
+        Player.powerProgression = this.next;
+        Player.powerProgression.draw();
       }
       return true;
     }
@@ -132,7 +179,7 @@ var Progression = function (name, step, req) {
 
   this.progress = function () {
     var progress = (this.earned / this.step);
-    return Math.min(this.req, progress).toFixed();
+    return Math.min(this.req, progress);
   };
 
   this.draw = function () {
@@ -145,7 +192,7 @@ var Progression = function (name, step, req) {
 
   this.update = function () {
     this.spanCurrent.textContent = this.progress();
-  }
+  };
 };
 
 
@@ -161,8 +208,8 @@ Game.start = function () {
   Player.workers.push(new GameWorker('test6', 100000, 8000, 150, 'rpg-Icon4_89'));
 
 
-  var first = new Progression('test', 100, 10);
-  first.setNext(new Progression('test2', 1000, 5));
+  var first = new StoryProgression('test', 10);
+  first.setNext(new StoryProgression('test2', 10));
   Player.progress = first;
 
 
@@ -178,14 +225,10 @@ Game.frame = function (T) {
   var DT = Math.max(T - Game.time, 5);
   Game.time = T;
   Player.earn(Player.powerPerSecond / 1000 * DT);
-  UI.currentPower.textContent = Player.power.toFixed();
+  UI.currentPower.textContent = Math.floor(Player.power);
   //document.title = Player.power.toFixed();
   UI.powerPerSecond.textContent = Player.powerPerSecond.toFixed(1);
   window.requestAnimationFrame(Game.frame);
-
-  if (Player.progress.checkProgress()) {
-    Player.progress.update();
-  }
 
   if (Game.powerButtonClicked && (T - Game.powerButtonClicked > 1000)) {
     UI.increasePowerVisual.classList.remove('pulse');
